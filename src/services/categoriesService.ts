@@ -1,33 +1,91 @@
-import CategoryModel, { CategoryDocument } from "../model/CategoryModel";
+// import CategoryModel, { CategoryDocument } from "../model/CategoryModel";
+
+// const getAllCategories = async (): Promise<CategoryDocument[]> => {
+//   return await CategoryModel.find();
+// }
+
+// const getCategoryById = async (categoryId: string): Promise<CategoryDocument | null> => {
+//   return await CategoryModel.findById(categoryId);
+// }
+
+// const createCategory = async (category: CategoryDocument): Promise<CategoryDocument> => {
+//   return await category.save();
+// }
+
+// const updateCategory = async (categoryId: string, newData: Partial<CategoryDocument>): Promise<CategoryDocument | null> => {
+//   const updatedCategory = await CategoryModel.findByIdAndUpdate(categoryId, newData, {
+//     new: true
+//   });
+
+//   return updatedCategory;
+// }
+
+// const deleteCategoryById = async (categoryId: string): Promise<CategoryDocument | null> => {
+//   return await CategoryModel.findByIdAndDelete(categoryId);
+// }
+
+// export default {
+//   getAllCategories,
+//   getCategoryById ,
+//   createCategory,
+//   updateCategory,
+//   deleteCategoryById
+// };
+import { InternalServerError, NotFoundError } from '../errors/ApiError';
+import CategoryModel, { CategoryDocument } from '../model/CategoryModel';
 
 const getAllCategories = async (): Promise<CategoryDocument[]> => {
-  return await CategoryModel.find();
-}
+  const categories: CategoryDocument[] = await CategoryModel.find();
+  if (categories && categories.length > 0) {
+    return categories;
+  }
 
-const getCategoryById = async (categoryId: string): Promise<CategoryDocument | null> => {
-  return await CategoryModel.findById(categoryId);
-}
+  throw new NotFoundError('No categories found');
+};
+
+const getCategoryById = async (categoryId: string): Promise<CategoryDocument> => {
+  const category: CategoryDocument | null = await CategoryModel.findById(categoryId);
+  if (category) {
+    return category;
+  }
+
+  throw new NotFoundError('No matched category with the id');
+};
 
 const createCategory = async (category: CategoryDocument): Promise<CategoryDocument> => {
-  return await category.save();
-}
- 
-const updateCategory = async (categoryId: string, newData: Partial<CategoryDocument>): Promise<CategoryDocument | null> => {
-  const updatedCategory = await CategoryModel.findByIdAndUpdate(categoryId, newData, {
-    new: true
+  const newCategory: CategoryDocument | null = await category.save();
+  if (newCategory) {
+    return newCategory;
+  }
+
+  throw new InternalServerError('Cannot create a new category in db');
+};
+
+const updateCategory = async (categoryId: string, newData: Partial<CategoryDocument>): Promise<CategoryDocument> => {
+  const udpatedCategory: CategoryDocument | null = await CategoryModel.findByIdAndUpdate(categoryId, newData, {
+    new: true,
   });
 
-  return updatedCategory;
-}
+  if (udpatedCategory) {
+    return udpatedCategory;
+  }
 
-const deleteCategoryById = async (categoryId: string): Promise<CategoryDocument | null> => {
-  return await CategoryModel.findByIdAndDelete(categoryId);
-}
+  throw new InternalServerError('Cannot update a new category in db');
+};
 
-export default { 
-  getAllCategories, 
-  getCategoryById ,
+const deleteCategoryById = async (categoryId: string): Promise<CategoryDocument> => {
+  const deletedCategory: CategoryDocument | null = await CategoryModel.findByIdAndDelete(categoryId);
+  if (deletedCategory) {
+    return deletedCategory;
+  }
+
+  throw new InternalServerError('Cannot delete the category in db');
+};
+
+export default {
+  getAllCategories,
+  getCategoryById,
   createCategory,
   updateCategory,
-  deleteCategoryById
-};  
+  deleteCategoryById,
+};

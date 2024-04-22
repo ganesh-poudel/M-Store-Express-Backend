@@ -13,7 +13,8 @@ import { passportAuthenticate } from '../misc/utils/AuthUtil';
 const router = express.Router();
 
 router.get('/', getAllCategories);
-router.post('/', passportAuthenticate(), adminCheck, createCategory);
+router.post('/', createCategory);
+//  passportAuthenticate(), adminCheck,
 
 router.get('/:categoryId', getCategoryById);
 router.put('/:categoryId', passportAuthenticate(), adminCheck, updateCategory);

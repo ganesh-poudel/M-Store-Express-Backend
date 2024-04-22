@@ -25,6 +25,7 @@ const PayLoad = (request: Request) => {
 
 export const getAllUsers = async (request: Request, response: Response, next: NextFunction) => {
   try {
+    PayLoad(request);
     const userList = await usersService.getAllUsers();
     if (userList) {
       return response.status(200).json(userList);
@@ -46,6 +47,7 @@ export const getSingleUserById = async (
   next: NextFunction
 ) => {
   try {
+    PayLoad(request);
     const getUser = await usersService.getUserById(request.params.userId);
     if (getUser) {
       return response.status(200).json(getUser);
@@ -62,52 +64,32 @@ export const getSingleUserById = async (
   }
 };
 
-export const checkEmail = async (
-  request: Request,
-  response: Response,
-  next: NextFunction
-) => {
-  try {
-    const { email } = request.body;
-    // Check email, if already in use
-    const existedUser: UserDocument | null = await usersService.getUserByEmail(email);
-    if (existedUser) {
-      throw new BadRequest('The email is already in use');
-    }
-
-    return response.status(200).json({
-      message: 'Email is OK, not in use'
-    });
-  } catch (error) {
-    if (error instanceof mongoose.Error.CastError) {
-      // from mongoose
-      return next(new BadRequest('Wrong data format to create'));
-    } else if (error instanceof ApiError) {
-      return next(error);
-    }
-    return next(new InternalServerError('Internal server error '));
-  }
-};
-
 export const createUser = async (
   request: Request,
   response: Response,
   next: NextFunction
 ) => {
   try {
-    const { email, password } = request.body;
+    const { email, password, role } = request.body;
 
-    // if admin mail, force Role to be an admin
-    let role: UserRole = UserRole.Customer;
-    if (email === 'admin@mail.com') {
-      role = UserRole.Admin;
+    // Check email, if already in use
+    const existedUser: UserDocument | null = await usersService.getUserByEmail(email);
+    if (existedUser) {
+      throw new BadRequest('The email is already in use');
+    }
+
+    // First user should be an admin
+    let checkedRole: UserRole = role;
+    const shouldBeAdmin: boolean = await usersService.checkIfNoUsers();
+    if (shouldBeAdmin) {
+      checkedRole = UserRole.Admin;
     }
 
     const hashedPassword = await AuthUtil.getHashedAuth(password);
     const data = new User({
       ...request.body,
       password: hashedPassword,
-      role: role,
+      role: checkedRole,
     });
 
     const userData = await usersService.createUser(data);

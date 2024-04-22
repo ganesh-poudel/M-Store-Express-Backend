@@ -29,6 +29,7 @@ const updateUser = async (id: string, newInformation: Partial<UserDocument>): Pr
   return updatedUser;
 };
 
+// # Woong
 const findOrCreateUser = async (user: UserDocument, plainPasswordForGoogleLogin: string): Promise<UserDocument | null> => {
   const existedUser: UserDocument | null = await getUserByEmail(user.email);
   if (existedUser) {
@@ -38,13 +39,19 @@ const findOrCreateUser = async (user: UserDocument, plainPasswordForGoogleLogin:
   return await createUser(user, plainPasswordForGoogleLogin);
 }
 
+// #Woong
 const getUserByEmail = async (email: string): Promise<UserDocument | null> => {
   return await User.findOne({ email });
 };
 
+// #Woong
 const resetPassword = async (user: UserDocument): Promise<UserDocument | null> => {
   return await user.save();
 };
+
+const checkIfNoUsers = async(): Promise<boolean> => {
+  return await User.countDocuments() === 0;
+}
 
 export default {
   getAllUsers,
@@ -54,5 +61,6 @@ export default {
   updateUser,
   resetPassword,
   getUserByEmail,
-  findOrCreateUser
+  findOrCreateUser,
+  checkIfNoUsers
 };

@@ -7,7 +7,7 @@ const PORT = process.env.PORT as string;
 
 mongoose
   .connect(mongodb_url, {
-    dbName: 'Cluster0',
+    dbName: 'fs-17-test',
   })
   .then(() => {
     app.listen(PORT, () => {
