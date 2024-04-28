@@ -22,14 +22,15 @@ export const getAllOrders = async (req: Request, res: Response, next: NextFuncti
 
     throw new NotFoundError('No orders found');
   } catch (e) {
-    if (e instanceof mongoose.Error.CastError) {
-      // from mongoose
-      return next(new BadRequest('Wrong format to get orders'));
-    } else if (e instanceof ApiError) {
-      return next(e);
-    }
+    console.log('error', e);
+    // if (e instanceof mongoose.Error.CastError) {
+    //   // from mongoose
+    //   return next(new BadRequest('Wrong format to get orders'));
+    // } else if (e instanceof ApiError) {
+    //   return next(e);
+    // }
 
-    return next(new InternalServerError('Unkown error ouccured to find the orders'));
+    // return next(new InternalServerError('Unkown error ouccured to find the orders'));
   }
 };
 

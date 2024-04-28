@@ -7,23 +7,26 @@ export type OrderDocument = Document & Order;
 
 export const OrderSchema = new Schema({
   user: {
-    type: Schema.Types.ObjectId,
-    ref: 'User'
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
   },
-  items: [{
-    type: OrderItemSchema 
-  }],
+  items: [
+    {
+      type: OrderItemSchema,
+    },
+  ],
   createdAt: {
     type: Date,
-    default: Date.now()
+    default: Date.now(),
   },
   totalPrice: {
     type: Number,
-    default: 0
+    default: 0,
   },
+
   shippingAddress: {
-    type: String
-  }
+    type: String,
+  },
 });
 
 export default mongoose.model<OrderDocument>('Order', OrderSchema);

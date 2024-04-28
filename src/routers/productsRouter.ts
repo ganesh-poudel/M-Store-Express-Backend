@@ -8,7 +8,7 @@ import {
   updateProduct,
 } from '../controllers/productsController';
 import adminCheck from '../middlewares/adminCheck';
-import { passportAuthenticate } from '../misc/utils/AuthUtil';
+import { passportAuthenticate } from '../utils/AuthUtil';
 
 const router = express.Router();
 
@@ -18,27 +18,6 @@ router.post('/', createNewProduct);
 
 router.get('/:productId', getProductById);
 router.put('/:productId', updateProduct); //  passportAuthenticate(), adminCheck,
-router.delete('/:productId', passportAuthenticate(), adminCheck, deleteProductById);
+router.delete('/:productId', deleteProductById); // passportAuthenticate(), adminCheck,
 
 export default router;
-
-
-
-  // "name": "cup",
-  //       "price": 5,
-  //       "description": "this is a nice cup",
-  //       "images": [
-  //         "www.image1.com",
-  //         "www.image2.com"
-  //       ],
-  //       "sizes": "L",
-  //     "categoryId": "65fde5bc218dd71b8ebaeabb",
-  
-  // "firstName": "User1",
-  //   "lastName": "last-name",
-  //   "email": "user1@mail.com",
-  //   "password": "12345",
-  //   "userName": "user1",
-  //   "role": "customer",
-  //   "avatar": "www.ping1.com",
-  //   "address": "address1",

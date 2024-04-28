@@ -9,11 +9,15 @@ const getUserById = async (id: string): Promise<UserDocument | null> => {
   return await User.findById(id);
 };
 
-const createUser = async (user: UserDocument, plainPasswordForGoogleLogin: string | null = null): Promise<UserDocument | null> => {
+const createUser = async (
+  user: UserDocument,
+  plainPasswordForGoogleLogin: string | null = null
+): Promise<UserDocument | null> => {
+  // console.log('user', user);
   const newUser: UserDocument | null = await user.save();
-  if (newUser) {
-    await sendWelcomeEmail(user, plainPasswordForGoogleLogin);
-  }
+  // if (newUser) {
+  //   await sendWelcomeEmail(user, plainPasswordForGoogleLogin);
+  // }
 
   return newUser;
 };
@@ -29,29 +33,25 @@ const updateUser = async (id: string, newInformation: Partial<UserDocument>): Pr
   return updatedUser;
 };
 
-// # Woong
-const findOrCreateUser = async (user: UserDocument, plainPasswordForGoogleLogin: string): Promise<UserDocument | null> => {
+const findOrCreateUser = async (
+  user: UserDocument,
+  plainPasswordForGoogleLogin: string
+): Promise<UserDocument | null> => {
   const existedUser: UserDocument | null = await getUserByEmail(user.email);
   if (existedUser) {
     return existedUser;
   }
-  
-  return await createUser(user, plainPasswordForGoogleLogin);
-}
 
-// #Woong
+  return await createUser(user, plainPasswordForGoogleLogin);
+};
+
 const getUserByEmail = async (email: string): Promise<UserDocument | null> => {
   return await User.findOne({ email });
 };
 
-// #Woong
 const resetPassword = async (user: UserDocument): Promise<UserDocument | null> => {
   return await user.save();
 };
-
-const checkIfNoUsers = async(): Promise<boolean> => {
-  return await User.countDocuments() === 0;
-}
 
 export default {
   getAllUsers,
@@ -62,5 +62,4 @@ export default {
   resetPassword,
   getUserByEmail,
   findOrCreateUser,
-  checkIfNoUsers
 };

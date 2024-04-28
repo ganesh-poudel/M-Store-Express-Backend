@@ -2,30 +2,16 @@ import { NextFunction, Request, Response } from 'express';
 import mongoose from 'mongoose';
 
 import usersService from '../services/usersService';
-import {
-  ApiError,
-  BadRequest,
-  ForbiddenError,
-  InternalServerError,
-  NotFoundError,
-} from '../errors/ApiError';
-import { PasswordReset, PasswordUpdte } from '../misc/types/Password';
+import { ApiError, BadRequest, ForbiddenError, InternalServerError, NotFoundError } from '../errors/ApiError';
+import { PasswordReset, PasswordUpdate } from '../misc/types/Password';
 import User, { UserDocument } from '../model/UserModel';
-import AuthUtil from '../misc/utils/AuthUtil';
+import AuthUtil from '../utils/AuthUtil';
 import { JwtTokens } from '../misc/types/JwtPayload';
 import { UserRole } from '../misc/types/User';
-
-const PayLoad = (request: Request) => {
-  const userPayload = request.user as UserDocument | undefined;
-  if (!userPayload) {
-    throw new ForbiddenError('Need to login');
-  }
-  return userPayload;
-};
+import { getUserDetail } from '../utils/commonUtil';
 
 export const getAllUsers = async (request: Request, response: Response, next: NextFunction) => {
   try {
-    PayLoad(request);
     const userList = await usersService.getAllUsers();
     if (userList) {
       return response.status(200).json(userList);
@@ -41,13 +27,26 @@ export const getAllUsers = async (request: Request, response: Response, next: Ne
   }
 };
 
-export const getSingleUserById = async (
-  request: Request,
-  response: Response,
-  next: NextFunction
-) => {
+export const getLoggedUserProfile = async (request: Request, response: Response, next: NextFunction) => {
   try {
-    PayLoad(request);
+    const loggedUser = getUserDetail(request);
+
+    if (loggedUser) {
+      return response.status(200).json(loggedUser);
+    }
+
+    throw new ForbiddenError('No user found');
+  } catch (error) {
+    if (error instanceof ApiError) {
+      return next(error);
+    }
+
+    return next(new InternalServerError('Internal Server Error'));
+  }
+};
+
+export const getSingleUserById = async (request: Request, response: Response, next: NextFunction) => {
+  try {
     const getUser = await usersService.getUserById(request.params.userId);
     if (getUser) {
       return response.status(200).json(getUser);
@@ -64,13 +63,9 @@ export const getSingleUserById = async (
   }
 };
 
-export const createUser = async (
-  request: Request,
-  response: Response,
-  next: NextFunction
-) => {
+export const checkEmail = async (request: Request, response: Response, next: NextFunction) => {
   try {
-    const { email, password, role } = request.body;
+    const { email } = request.body;
 
     // Check email, if already in use
     const existedUser: UserDocument | null = await usersService.getUserByEmail(email);
@@ -78,18 +73,35 @@ export const createUser = async (
       throw new BadRequest('The email is already in use');
     }
 
-    // First user should be an admin
-    let checkedRole: UserRole = role;
-    const shouldBeAdmin: boolean = await usersService.checkIfNoUsers();
-    if (shouldBeAdmin) {
-      checkedRole = UserRole.Admin;
+    return response.status(200).json({
+      message: 'Email is OK, not in use',
+    });
+  } catch (error) {
+    if (error instanceof mongoose.Error.CastError) {
+      // from mongoose
+      return next(new BadRequest('Wrong data format to create'));
+    } else if (error instanceof ApiError) {
+      return next(error);
+    }
+    return next(new InternalServerError('Internal server error '));
+  }
+};
+
+export const createUser = async (request: Request, response: Response, next: NextFunction) => {
+  try {
+    const { email, password } = request.body;
+
+    // if email is admin@mail, force Role to be an admin
+    let role: UserRole = UserRole.Customer;
+    if (email === 'admin@mail.com') {
+      role = UserRole.Admin;
     }
 
     const hashedPassword = await AuthUtil.getHashedAuth(password);
     const data = new User({
       ...request.body,
       password: hashedPassword,
-      role: checkedRole,
+      role: role,
     });
 
     const userData = await usersService.createUser(data);
@@ -109,14 +121,10 @@ export const createUser = async (
   }
 };
 
-export const deleteuser = async (
-  request: Request,
-  response: Response,
-  next: NextFunction
-) => {
+export const deleteuser = async (request: Request, response: Response, next: NextFunction) => {
   try {
-      const userPayload = request.user as UserDocument;
-      const foundUser = await usersService.deleteUser(userPayload._id);
+    const userPayload = request.user as UserDocument;
+    const foundUser = await usersService.deleteUser(userPayload._id);
     if (foundUser) {
       return response.sendStatus(204);
     }
@@ -132,14 +140,11 @@ export const deleteuser = async (
   }
 };
 
-export const updateUser = async (
-  request: Request,
-  response: Response,
-  next: NextFunction
-) => {
+export const updateUser = async (request: Request, response: Response, next: NextFunction) => {
   try {
-    const user = PayLoad(request)
+    const user = getUserDetail(request);
     const updatedUser = await usersService.updateUser(user._id, request.body);
+
     if (updatedUser) {
       return response.status(200).json(updatedUser);
     }
@@ -147,7 +152,7 @@ export const updateUser = async (
   } catch (error) {
     if (error instanceof mongoose.Error.CastError) {
       // from mongoose
-      return next(new BadRequest('Wrong data format to udpate'));
+      return next(new BadRequest('Wrong data format to update'));
     } else if (error instanceof ApiError) {
       return next(error);
     }
@@ -155,25 +160,20 @@ export const updateUser = async (
   }
 };
 
-export const userLogin = async (
-  request: Request,
-  response: Response,
-  next: NextFunction
-) => {
+export const userLogin = async (request: Request, response: Response, next: NextFunction) => {
   try {
     const { email, password } = request.body;
     const user: UserDocument | null = await usersService.getUserByEmail(email);
+
     if (user) {
-      const isMatched: boolean = await AuthUtil.comparePlainAndHashed(
-        password,
-        user.password
-      );
+      const isMatched: boolean = await AuthUtil.comparePlainAndHashed(password, user.password);
       if (!isMatched) {
         throw new BadRequest("Password didn't match");
       }
       const tokens: JwtTokens = await AuthUtil.generateTokens(user);
       return response.status(200).json({ tokens, user });
     }
+
     throw new NotFoundError('User Not Found');
   } catch (error) {
     if (error instanceof mongoose.Error.CastError) {
@@ -186,16 +186,9 @@ export const userLogin = async (
   }
 };
 
-// #Woong
-export const googleLogin = async (
-  request: Request,
-  response: Response,
-  next: NextFunction
-) => {
+export const googleLogin = async (request: Request, response: Response, next: NextFunction) => {
   try {
-    const user: UserDocument | undefined = request.user as
-      | UserDocument
-      | undefined;
+    const user: UserDocument | undefined = request.user as UserDocument | undefined;
     if (user) {
       const tokens: JwtTokens = await AuthUtil.generateTokens(user);
       return response.status(200).json({ tokens, user });
@@ -214,34 +207,20 @@ export const googleLogin = async (
   }
 };
 
-// #Woong
-export const forgetPassword = async (
-  request: Request,
-  response: Response,
-  next: NextFunction
-) => {
+export const forgetPassword = async (request: Request, response: Response, next: NextFunction) => {
   try {
     const resetPasswordInfo: PasswordReset = request.body;
-    const matchedUser: UserDocument | null = await usersService.getUserByEmail(
-      resetPasswordInfo.userEmail
-    );
+    const matchedUser: UserDocument | null = await usersService.getUserByEmail(resetPasswordInfo.userEmail);
 
     if (!matchedUser) {
-      throw new NotFoundError(
-        `User not found with email ${resetPasswordInfo.userEmail}`
-      );
+      throw new NotFoundError(`User not found with email ${resetPasswordInfo.userEmail}`);
     }
 
-    const plainPasswordToReset: string = `tempPasswordToReset_${matchedUser.firstName}`;
-    const hashedPassword: string = await AuthUtil.getHashedAuth(
-      plainPasswordToReset
-    );
+    const plainPasswordToReset: string = `tempPasswordToReset_${matchedUser.firstname}`;
+    const hashedPassword: string = await AuthUtil.getHashedAuth(plainPasswordToReset);
     matchedUser.password = hashedPassword;
-    console.log('Temp passowrd:', plainPasswordToReset);
 
-    const updatedUser: UserDocument | null = await usersService.resetPassword(
-      matchedUser
-    );
+    const updatedUser: UserDocument | null = await usersService.resetPassword(matchedUser);
     if (updatedUser) {
       return response.status(200).json(updatedUser);
     }
@@ -259,35 +238,22 @@ export const forgetPassword = async (
   }
 };
 
-// #Woong
-export const updatePassword = async (
-  request: Request,
-  response: Response,
-  next: NextFunction
-) => {
+export const updatePassword = async (request: Request, response: Response, next: NextFunction) => {
   try {
-    const updateInfo: PasswordUpdte = request.body;
-    const user: UserDocument | undefined = request.user as
-      | UserDocument
-      | undefined;
+    const updateInfo: PasswordUpdate = request.body;
+    const user: UserDocument | undefined = request.user as UserDocument | undefined;
     if (!user) {
-      throw new ForbiddenError('User is undefined, need to login');
+      throw new ForbiddenError('User not found, please login');
     }
 
-    const matched: boolean = await AuthUtil.comparePlainAndHashed(
-      updateInfo.oldPassword,
-      user.password
-    );
+    const matched: boolean = await AuthUtil.comparePlainAndHashed(updateInfo.oldPassword, user.password);
     if (!matched) {
-      throw new BadRequest('The passowrd is not matched');
+      throw new BadRequest('Password did not match');
     }
 
     user.password = await AuthUtil.getHashedAuth(updateInfo.newPassword);
 
-    const updatedUser: UserDocument | null = await usersService.updateUser(
-      user._id,
-      user
-    );
+    const updatedUser: UserDocument | null = await usersService.updateUser(user._id, user);
     if (updatedUser) {
       return response.status(200).json(updatedUser);
     }
@@ -301,8 +267,6 @@ export const updatePassword = async (
       return next(e);
     }
 
-    return next(
-      new InternalServerError('Rest password failed with unknown error')
-    );
+    return next(new InternalServerError('Rest password failed with unknown error'));
   }
 };

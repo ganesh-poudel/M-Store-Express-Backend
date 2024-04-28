@@ -1,15 +1,15 @@
-import { Product } from "./Product";
-import { User } from "./User"
+import { Product } from './Product';
+import { User } from './User';
 
 export type OrderItem = {
   product: Product;
   quantity: number;
-}
+};
 
 export enum OrderStatus {
   PrepareItem = 'prepare',
   Delivering = 'delivering',
-  Delivered = 'delivered'
+  Delivered = 'delivered',
 }
 
 export type Order = {
@@ -19,5 +19,5 @@ export type Order = {
   totalPrice: number;
   shippingAddress: string;
   payment: boolean;
-  status: OrderStatus
-}
+  status: OrderStatus;
+};
