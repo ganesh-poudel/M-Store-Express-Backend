@@ -111,10 +111,10 @@ We have structured base entities
 
 ## Deployment
    The API is live now hosted by RENDER
-   Check the live link here [https://fs17-backend-b5i2.onrender.com](https://fs17-backend-b5i2.onrender.com)
+   Check the live link here [https://m-store-express-backend.onrender.com](https://m-store-express-backend.onrender.com)
 
    - Some examples
-      - [All products](https://fs17-backend-b5i2.onrender.com/api/v1/products)
-      - [All categories](https://fs17-backend-b5i2.onrender.com/api/v1/categories)
-      - [All orders](https://fs17-backend-b5i2.onrender.com/api/v1/orders)
-      - [All users](https://fs17-backend-b5i2.onrender.com/api/v1/users)
+      - [All products](https://m-store-express-backend.onrender.com/api/v1/products)
+      - [All categories](https://m-store-express-backend.onrender.com/api/v1/categories)
+      - [All orders](https://m-store-express-backend.onrender.com/api/v1/orders)
+      - [All users](https://m-store-express-backend.onrender.com/api/v1/users/)
